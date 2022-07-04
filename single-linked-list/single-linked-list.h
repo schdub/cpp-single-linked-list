@@ -91,14 +91,14 @@ public:
     using ConstIterator = BasicIterator<const Type>;
 
     SingleLinkedList(std::initializer_list<Type> values) {
-        copy_reversed(values);
+        Assign(values);
     }
 
     SingleLinkedList(const SingleLinkedList& other) {
         // Сначала надо удостовериться, что текущий список пуст
         assert(size_ == 0 && head_.next_node == nullptr);
         SingleLinkedList tmp;
-        tmp.copy_reversed(other);
+        tmp.Assign(other);
         swap(tmp);
     }
 
@@ -160,6 +160,7 @@ public:
      * Если при создании элемента будет выброшено исключение, список останется в прежнем состоянии
      */
     Iterator InsertAfter(ConstIterator pos, const Type& value) {
+        assert(pos.node_ != nullptr);
         Node * new_node = nullptr;
         try {
             new_node = new Node(value, pos.node_->next_node);
@@ -233,15 +234,32 @@ public:
 private:
 
     template <typename Container>
-    void copy_reversed(const Container& container) {
-        std::stack<Type> rev_stack;
-        for (const auto t : container) {
-            rev_stack.push(t);
+    void Assign(const Container& container) {
+        SingleLinkedList tmp_list; // временный список
+        Node * ptr_prev = nullptr; // пердыдущая нода
+        Node * ptr = nullptr; // текущая нода
+        try {
+            for (const auto value : container) {
+                ptr = new Node(value, nullptr);
+                if (tmp_list.head_.next_node == nullptr) {
+                    tmp_list.head_.next_node = ptr;
+                }
+                if (ptr_prev) {
+                    ptr_prev->next_node = ptr;
+                }
+                ptr_prev        = ptr;
+                ptr             = nullptr;
+                tmp_list.size_ += 1;
+            }
         }
-        while (rev_stack.empty() == false) {
-            PushFront(rev_stack.top());
-            rev_stack.pop();
+        catch (...) {
+            if (ptr != nullptr) {
+                delete ptr;
+            }
+            throw;
         }
+        Clear();
+        swap(tmp_list);
     }
 
     Node head_ = Node();
